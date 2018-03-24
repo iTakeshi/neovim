@@ -7064,7 +7064,14 @@ static void n_opencmd(cmdarg_T *cap)
  */
 static void nv_dot(cmdarg_T *cap)
 {
+  FILE* fp;
+  fp = fopen("mylog.txt", "a");
+  fprintf(fp, "nv_redo in\n");
+  fclose(fp);
   if (!checkclearopq(cap->oap)) {
+  fp = fopen("mylog.txt", "a");
+  fprintf(fp, "nv_redo before\n");
+  fclose(fp);
     /*
      * If "restart_edit" is true, the last but one command is repeated
      * instead of the last command (inserting text). This is used for
@@ -7072,7 +7079,13 @@ static void nv_dot(cmdarg_T *cap)
      */
     if (start_redo(cap->count0, restart_edit != 0 && !arrow_used) == false)
       clearopbeep(cap->oap);
+  fp = fopen("mylog.txt", "a");
+  fprintf(fp, "nv_redo after\n");
+  fclose(fp);
   }
+  fp = fopen("mylog.txt", "a");
+  fprintf(fp, "nv_redo out\n");
+  fclose(fp);
 }
 
 /*

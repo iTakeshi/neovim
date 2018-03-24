@@ -50,6 +50,8 @@
 #include "nvim/os/os.h"
 #include "nvim/api/private/handle.h"
 
+FILE* fp;
+
 /*
  * These buffers are used for storing:
  * - stuffed characters: A command that is translated into another command.
@@ -235,6 +237,29 @@ char_u *get_recorded(void)
 char_u *get_inserted(void)
 {
   return get_buffcont(&redobuff, FALSE);
+}
+
+void inspect_print(const buffheader_T * const b) {
+    fprintf(fp, "first %d, %d, %d, %d, %d\n", &(b->bh_first), b->bh_first.b_next, b->bh_curr, b->bh_index, b->bh_space);
+    if (b->bh_curr != NULL) {
+        for (int i = 0; i <= STRLEN(b->bh_curr->b_str); i++)
+            fprintf(fp, "%d\n", b->bh_curr->b_str[i]);
+    }
+    fprintf(fp, "----\n");
+    if (b->bh_first.b_next != NULL) {
+        fprintf(fp, "next %d\n", b->bh_first.b_next->b_next);
+        for (int i = 0; i <= STRLEN(b->bh_first.b_next->b_str); i++)
+            fprintf(fp, "%d\n", b->bh_first.b_next->b_str[i]);
+    }
+}
+
+void inspect(void) {
+    fp = fopen("mylog.txt", "a");
+    fprintf(fp, "------------------------readbuf1\n");
+    inspect_print(&readbuf1);
+    fprintf(fp, "------------------------readbuf2\n");
+    inspect_print(&readbuf2);
+    fclose(fp);
 }
 
 /// Add string after the current block of the given buffer
@@ -517,6 +542,9 @@ void restoreRedobuff(void)
  */
 void AppendToRedobuff(const char *s)
 {
+  fp = fopen("mylog.txt", "a");
+  fprintf(fp, "AppendToRedobuff %d, %d\n", *s, block_redo);
+  fclose(fp);
   if (!block_redo) {
     add_buff(&redobuff, (const char *)s, -1L);
   }
@@ -582,6 +610,9 @@ AppendToRedobuffLit (
  */
 void AppendCharToRedobuff(int c)
 {
+  fp = fopen("mylog.txt", "a");
+  fprintf(fp, "AppendCharToRedobuff %d, %d\n", c, block_redo);
+  fclose(fp);
   if (!block_redo)
     add_char_buff(&redobuff, c);
 }
@@ -723,11 +754,20 @@ static int read_redo(int init, int old_redo)
  */
 static void copy_redo(int old_redo)
 {
+  fp = fopen("mylog.txt", "a");
+  fprintf(fp, "copy_redo in\n");
+  fclose(fp);
   int c;
 
   while ((c = read_redo(FALSE, old_redo)) != NUL) {
+  fp = fopen("mylog.txt", "a");
+  fprintf(fp, "copy_redo %d\n", c);
+  fclose(fp);
     add_char_buff(&readbuf2, c);
   }
+  fp = fopen("mylog.txt", "a");
+  fprintf(fp, "copy_redo out\n");
+  fclose(fp);
 }
 
 /*
@@ -741,6 +781,9 @@ static void copy_redo(int old_redo)
  */
 int start_redo(long count, int old_redo)
 {
+  fp = fopen("mylog.txt", "a");
+  fprintf(fp, "start_redo in\n");
+  fclose(fp);
   int c;
 
   /* init the pointers; return if nothing to redo */
@@ -780,6 +823,9 @@ int start_redo(long count, int old_redo)
   /* copy from the redo buffer into the stuff buffer */
   add_char_buff(&readbuf2, c);
   copy_redo(old_redo);
+  fp = fopen("mylog.txt", "a");
+  fprintf(fp, "start_redo out\n");
+  fclose(fp);
   return OK;
 }
 
@@ -862,6 +908,12 @@ int ins_typebuf(char_u *str, int noremap, int offset, int nottyped, bool silent)
   int newoff;
   int val;
   int nrm;
+
+  FILE* fp;
+  fp = fopen("mylog.txt", "a");
+  for (int i = 0; i < typebuf.tb_len; i++)
+      fprintf(fp, "typebuf in %d, %d\n", (unsigned char)typebuf.tb_buf[i + typebuf.tb_off], offset);
+  fclose(fp);
 
   init_typebuf();
   if (++typebuf.tb_change_cnt == 0)
@@ -953,6 +1005,11 @@ int ins_typebuf(char_u *str, int noremap, int offset, int nottyped, bool silent)
   }
   if (typebuf.tb_no_abbr_cnt && offset == 0)    /* and not used for abbrev.s */
     typebuf.tb_no_abbr_cnt += addlen;
+
+  fp = fopen("mylog.txt", "a");
+  for (int i = 0; i < typebuf.tb_len; i++)
+      fprintf(fp, "typebuf out %d, %d\n", (unsigned char)typebuf.tb_buf[i + typebuf.tb_off], offset);
+  fclose(fp);
 
   return OK;
 }
@@ -1366,6 +1423,10 @@ int vgetc(void)
   char_u buf[MB_MAXBYTES + 1];
   int i;
 
+  fp = fopen("mylog.txt", "a");
+  fprintf(fp, "vgetc in\n");
+  fclose(fp);
+
   // Do garbage collection when garbagecollect() was called previously and
   // we are now at the toplevel.
   if (may_garbage_collect && want_garbage_collect) {
@@ -1392,6 +1453,10 @@ int vgetc(void)
         did_inc = true;         // mod_mask may change value
       }
       c = vgetorpeek(true);
+  fp = fopen("mylog.txt", "a");
+  fprintf(fp, "vgetc mid %d\n", (unsigned int)c);
+  fclose(fp);
+
       if (did_inc) {
         no_mapping--;
       }
@@ -1493,6 +1558,10 @@ int vgetc(void)
    * avoid internally used Lists and Dicts to be freed.
    */
   may_garbage_collect = FALSE;
+
+  fp = fopen("mylog.txt", "a");
+  fprintf(fp, "vgetc out, %d\n", c);
+  fclose(fp);
 
   return c;
 }
@@ -1660,6 +1729,10 @@ static int vgetorpeek(int advance)
       c = read_readbuffers(advance);
     }
     if (c != NUL && !got_int) {
+    fp = fopen("mylog.txt", "a");
+          c1 = typebuf.tb_buf[typebuf.tb_off];
+    fprintf(fp, "vgetorpeek uninterrupted %d\n", (unsigned char) c1);
+    fclose(fp);
       if (advance) {
         // KeyTyped = FALSE;  When the command that stuffed something
         // was typed, behave like the stuffed command was typed.
@@ -1690,6 +1763,9 @@ static int vgetorpeek(int advance)
           /* flush all input */
           c = inchar(typebuf.tb_buf, typebuf.tb_buflen - 1, 0L,
               typebuf.tb_change_cnt);
+    fp = fopen("mylog.txt", "a");
+    fprintf(fp, "vgetorpeek null and interrupted %d\n", (unsigned char) c);
+    fclose(fp);
           /*
            * If inchar() returns TRUE (script file was active) or we
            * are inside a mapping, get out of insert mode.
@@ -1732,6 +1808,9 @@ static int vgetorpeek(int advance)
           mp = NULL;
           max_mlen = 0;
           c1 = typebuf.tb_buf[typebuf.tb_off];
+    fp = fopen("mylog.txt", "a");
+    fprintf(fp, "vgetorpeek null and uninterrupted %d\n", (unsigned char) c1);
+    fclose(fp);
           if (no_mapping == 0 && maphash_valid
               && (no_zero_mapping == 0 || c1 != '0')
               && (typebuf.tb_maplen == 0

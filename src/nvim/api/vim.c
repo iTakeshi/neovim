@@ -144,6 +144,15 @@ void nvim_feedkeys(String keys, String mode, Boolean escape_csi)
   }
   ins_typebuf((char_u *)keys_esc, (remap ? REMAP_YES : REMAP_NONE),
       insert ? 0 : typebuf.tb_len, !typed, false);
+  FILE* fp;
+  fp = fopen("mylog.txt", "a");
+  fprintf(fp, "nvim_feedkeys in\n");
+  fclose(fp);
+  inspect();
+  inspect();
+  fp = fopen("mylog.txt", "a");
+  fprintf(fp, "nvim_feedkeys out\n");
+  fclose(fp);
 
   if (escape_csi) {
       xfree(keys_esc);

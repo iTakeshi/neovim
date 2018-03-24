@@ -8378,6 +8378,10 @@ static void f_feedkeys(typval_T *argvars, typval_T *rettv, FunPtr fptr)
   }
 
   const char *const keys = tv_get_string(&argvars[0]);
+  FILE* fp;
+  fp = fopen("mylog.txt", "a");
+  for (int i = 0; i < strlen(keys); i++) fprintf(fp, "feedkeys %d\n", (unsigned char)keys[i]);
+  fclose(fp);
   char nbuf[NUMBUFLEN];
   const char *flags = NULL;
   if (argvars[1].v_type != VAR_UNKNOWN) {
