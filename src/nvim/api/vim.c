@@ -142,13 +142,14 @@ void nvim_feedkeys(String keys, String mode, Boolean escape_csi)
   } else {
       keys_esc = keys.data;
   }
-  ins_typebuf((char_u *)keys_esc, (remap ? REMAP_YES : REMAP_NONE),
-      insert ? 0 : typebuf.tb_len, !typed, false);
   FILE* fp;
   fp = fopen("mylog.txt", "a");
   fprintf(fp, "nvim_feedkeys in\n");
   fclose(fp);
   inspect();
+  if (insert && prepend_buf_pri((char_u *)keys_esc) == FAIL)
+    ins_typebuf((char_u *)keys_esc, (remap ? REMAP_YES : REMAP_NONE),
+      typebuf.tb_len, !typed, false);
   inspect();
   fp = fopen("mylog.txt", "a");
   fprintf(fp, "nvim_feedkeys out\n");
